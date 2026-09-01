@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>탄생 컬러 — 만화인 헬프데스크</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap');
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/static/pretendard.css');
+
+  :root{
+    --ink: #1b2a4a;
+    --ink-soft: #3c4d70;
+    --paper: #faf6ee;
+    --paper-deep: #f1e9d8;
+    --coral: #e4703a;
+    --line: rgba(27,42,74,0.18);
+    --serif: 'Noto Serif KR', serif;
+    --sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{
+    height:100%;
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    overflow:hidden;
+  }
+
+  #stage{
+    position:relative;
+    width:100%;
+    height:100vh;
+    background: radial-gradient(120% 140% at 50% -10%, var(--paper-deep) 0%, var(--paper) 55%);
+    transition: background 900ms ease;
+    overflow-y:auto;
+  }
+
+  .frame{
+    max-width: 760px;
+    margin: 0 auto;
+    min-height: 100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding: 6vh 6vw;
+    text-align:center;
+  }
+
+  .mark{
+    font-family: var(--sans);
+    font-weight:600;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    color: var(--ink-soft);
+    margin-bottom: 28px;
+  }
+  .mark span{ color: var(--coral); }
+
+  /* ---------- select screen ---------- */
+  #select-screen h1{
+    font-family: var(--serif);
+    font-weight:600;
+    font-size: clamp(26px, 4.2vw, 40px);
+    line-height:1.35;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+
+  #select-screen p.sub{
+    font-size: 15px;
+    color: var(--ink-soft);
+    margin-bottom: 40px;
+  }
+
+  .date-row{
+    display:flex;
+    gap: 10px;
+    justify-content:center;
+    align-items:flex-end;
+    margin-bottom: 36px;
+    width:100%;
+  }
+
+  .date-field{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .date-field label{
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+    padding-left: 2px;
+  }
+  .date-field.year{ width: 120px; }
+  .date-field.month, .date-field.day{ width: 84px; }
+
+  .num-input{
+    width:100%;
+    appearance:none;
+    -webkit-appearance:none;
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: 3px;
+    padding: 16px 14px;
+    font-family: var(--sans);
+    font-size: 22px;
+    font-weight:600;
+    letter-spacing: 0.03em;
+    color: var(--ink);
+    text-align:center;
+  }
+  .num-input::placeholder{ color: rgba(27,42,74,0.28); font-weight:500; }
+  .num-input:focus{ outline:none; border-color: var(--ink); }
+  .num-input.error{ border-color: #D9524A; }
+
+  .date-sep{
+    font-size: 20px;
+    color: var(--ink-soft);
+    padding-bottom: 16px;
+  }
+
+  .go-btn{
+    border: 1.5px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--sans);
+    font-weight:600;
+    font-size: 16px;
+    padding: 16px 48px;
+    border-radius: 3px;
+    cursor:pointer;
+    transition: background 160ms ease, color 160ms ease;
+  }
+  .go-btn:hover{ background: var(--coral); border-color: var(--coral); }
+  .go-btn:active{ transform: scale(0.98); }
+
+  /* ---------- reveal screen ---------- */
+  #reveal-screen{ display:none; }
+  #reveal-screen.active{ display:flex; }
+
+  .back-link{
+    position:absolute;
+    top: 24px; left: 28px;
+    font-size: 14px;
+    color: var(--ink-soft);
+    background:none; border:none;
+    cursor:pointer;
+    font-family: var(--sans);
+    opacity:0.75;
+    z-index:5;
+  }
+  .back-link:hover{ opacity:1; }
+
+  .swatch{
+    width: 100%;
+    max-width: 260px;
+    height: 180px;
+    border: 3px solid var(--ink);
+    margin: 0 auto 20px;
+    opacity:0;
+    transform: scaleY(0.85);
+    transform-origin: bottom;
+    transition: opacity 500ms ease, transform 500ms cubic-bezier(.2,.8,.2,1);
+  }
+  #reveal-screen.active .swatch{ opacity:1; transform: scaleY(1); }
+
+  .lucky-badge{
+    display:inline-block;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 4px 12px;
+    margin-bottom: 14px;
+  }
+
+  .color-name{
+    font-family: var(--serif);
+    font-weight:700;
+    font-size: clamp(22px, 3.2vw, 28px);
+    margin-bottom: 4px;
+  }
+  .color-hex{
+    font-family: var(--sans);
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin-bottom: 20px;
+  }
+
+  .symbol-tag{
+    display:inline-flex;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .symbol-tag .label{
+    font-size: 12px;
+    font-weight:600;
+    color: #ffffff;
+    background: var(--coral);
+    border-radius: 20px;
+    padding: 5px 13px;
+  }
+  .symbol-tag .value{
+    font-size: 15px;
+    font-weight:600;
+    color: var(--coral);
+  }
+
+  .message{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(16px, 2vw, 18px);
+    line-height:1.6;
+    color: var(--ink-soft);
+    max-width: 420px;
+    margin: 0 auto 28px;
+  }
+
+  .keyword-row{
+    display:flex;
+    gap: 8px;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-bottom: 22px;
+  }
+  .keyword-chip{
+    font-size: 12.5px;
+    font-weight:500;
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 6px 14px;
+  }
+
+  .tip-box{
+    width:100%;
+    max-width: 420px;
+    background: var(--paper-deep);
+    border-left: 3px solid var(--coral);
+    border-radius: 2px;
+    padding: 14px 18px;
+    margin-bottom: 30px;
+    text-align:left;
+    font-size: 13.5px;
+    line-height:1.6;
+    color: var(--ink);
+  }
+  .tip-box .tip-label{
+    display:block;
+    font-size: 11px;
+    font-weight:600;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+
+  .palette-label{
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+  }
+
+  .palette-row{
+    display:flex;
+    gap: 10px;
+    justify-content:center;
+    margin-bottom: 30px;
+  }
+  .palette-chip{
+    width: 62px;
+  }
+  .palette-swatch{
+    width: 62px; height: 62px;
+    border: 1.5px solid var(--ink);
+  }
+  .palette-hex{
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .cta{
+    border-top: 1px solid var(--line);
+    padding-top: 22px;
+    width: 100%;
+    max-width: 420px;
+    display:flex;
+    align-items:center;
+    justify-content: center;
+    gap: 18px;
+  }
+
+  .qr-mock{
+    width: 52px; height: 52px;
+    border: 1.5px solid var(--ink);
+    flex-shrink:0;
+    position:relative;
+  }
+  .qr-mock::before, .qr-mock::after{
+    content:'';
+    position:absolute;
+    width: 13px; height:13px;
+    border: 2px solid var(--ink);
+  }
+  .qr-mock::before{ top:4px; left:4px; }
+  .qr-mock::after{ bottom:4px; right:4px; }
+
+  .cta-text{
+    text-align:left;
+    font-size: 13px;
+    line-height:1.55;
+    color: var(--ink-soft);
+  }
+  .cta-text b{ color: var(--ink); font-weight:600; }
+
+  .footnote{
+    margin-top: 22px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    opacity:0.6;
+    max-width: 420px;
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+
+  <div id="select-screen" class="frame">
+    <div class="mark">만화인 헬프데스크 <span>·</span> 마음 ZONE</div>
+    <h1>당신의 생년월일을<br>알려주세요</h1>
+    <p class="sub">태어난 날에 맞는 오늘의 색을 찾아드립니다</p>
+
+    <div class="date-row">
+      <div class="date-field year">
+        <label>년</label>
+        <input class="num-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="YYYY" id="in-year">
+      </div>
+      <div class="date-sep">-</div>
+      <div class="date-field month">
+        <label>월</label>
+        <input class="num-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="MM" id="in-month">
+      </div>
+      <div class="date-sep">-</div>
+      <div class="date-field day">
+        <label>일</label>
+        <input class="num-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="DD" id="in-day">
+      </div>
+    </div>
+
+    <button class="go-btn" onclick="reveal()">탄생 컬러 찾기</button>
+  </div>
+
+  <div id="reveal-screen" class="frame">
+    <button class="back-link" onclick="reset()">← 다시 하기</button>
+
+    <div class="swatch" id="swatch"></div>
+    <div class="lucky-badge" id="lucky"></div>
+    <div class="color-name" id="color-name"></div>
+    <div class="symbol-tag" id="symbol-tag"></div>
+    <div class="color-hex" id="color-hex"></div>
+    <div class="message" id="message"></div>
+
+    <div class="keyword-row" id="keyword-row"></div>
+
+    <div class="tip-box" id="tip-box"></div>
+
+    <div class="palette-label">내 탄생 컬러와 조화로운 배색</div>
+    <div class="palette-row" id="palette-row"></div>
+
+    <div class="cta">
+      <div class="qr-mock"></div>
+      <div class="cta-text">
+        <b>대표 탄생 컬러로 도안을 색칠해보세요.</b><br>
+        완성하면 스태프에게 스탬프를 받아가세요.
+      </div>
+    </div>
+
+    <div class="footnote">탄생 컬러는 계절과 감정을 담은 상징적인 색이며, 입력하신 정보는 저장·전송되지 않습니다.</div>
+  </div>
+
+</div>
+
+<script>
+const MONTHS = [
+  { m:1,  name:'고요 남색',   hex:'#1B2A4A', symbol:'몰입과 안정', msg:'잠시 멈춰도 괜찮아요, 다시 시작할 힘은 남아있으니까', keywords:['차분함','지속력','다짐'], tip:'천천히 숨을 세 번 들이쉬고 내쉬어보세요' },
+  { m:2,  name:'프로스트 라벤더', hex:'#B9AEDC', symbol:'회복과 쉼', msg:'오늘 하루는 아무것도 하지 않아도 괜찮은 날', keywords:['여유','위로','쉼표'], tip:'잠깐 눈을 감고, 아무 생각 없이 쉬어보세요' },
+  { m:3,  name:'아쿠아 민트',  hex:'#76D1BC', symbol:'균형과 회복', msg:'지친 마음에 잠깐의 숨 고르기를 건네는 색', keywords:['유연함','공감','회복력'], tip:'옆 사람에게 오늘 기분을 한마디로 말해보세요' },
+  { m:4,  name:'새싹 그린',   hex:'#8FBF7A', symbol:'성장과 다짐', msg:'작은 시작도 충분히 의미 있다는 걸 기억해요', keywords:['용기','시작','가능성'], tip:'오늘 하고 싶었던 작은 일 하나를 지금 해보세요' },
+  { m:5,  name:'코랄 핑크',   hex:'#F0876B', symbol:'설렘과 다정함', msg:'나에게 조금 더 다정해져도 괜찮은 계절', keywords:['다정함','설렘','배려'], tip:'오늘 만난 사람에게 작은 칭찬을 건네보세요' },
+  { m:6,  name:'선 옐로우',   hex:'#F2C94C', symbol:'활력과 몰입', msg:'지금의 나를 있는 그대로 인정하는 힘', keywords:['활력','몰입','긍정'], tip:'지금 이 순간, 좋아하는 걸 하나 떠올려보세요' },
+  { m:7,  name:'비비드 오렌지', hex:'#E4703A', symbol:'인내와 자기돌봄', msg:'버티는 중이라면, 그것만으로도 잘하고 있는 거예요', keywords:['인내','열정','자기돌봄'], tip:'오늘 하루 애쓴 나에게 잘했다고 말해주세요' },
+  { m:8,  name:'딥 코랄',    hex:'#D9524A', symbol:'온기와 자신감', msg:'흔들려도 나를 지켜내는 마음의 온도', keywords:['온기','자신감','단단함'], tip:'거울 속 나에게 살짝 웃어주는 건 어때요' },
+  { m:9,  name:'머스타드',   hex:'#C99A3A', symbol:'성찰과 안정', msg:'애쓴 시간들이 결국 나를 단단하게 만들어요', keywords:['성찰','결실','안정감'], tip:'오늘 감사했던 순간 하나를 떠올려보세요' },
+  { m:10, name:'테라코타 브라운', hex:'#A9673F', symbol:'안정과 뿌리내림', msg:'불안할 땐 지금 여기, 나에게 집중해봐요', keywords:['뿌리내림','안정','신뢰'], tip:'발 밑을 느끼며 천천히 세 걸음 걸어보세요' },
+  { m:11, name:'버건디',    hex:'#7A3B4A', symbol:'성찰과 깊이', msg:'지나온 나를 다정한 시선으로 돌아보는 시간', keywords:['깊이','성찰','고요'], tip:'요즘 마음에 남는 한 문장을 떠올려보세요' },
+  { m:12, name:'잉크 네이비', hex:'#22344F', symbol:'차분함과 자기보호', msg:'나를 지키는 마음도, 용기라는 걸 잊지 마세요', keywords:['차분함','용기','자기보호'], tip:'오늘은 나를 위한 작은 선택을 하나 해보세요' },
+];
+
+/* ---- date input default ---- */
+const inYear = document.getElementById('in-year');
+const inMonth = document.getElementById('in-month');
+const inDay = document.getElementById('in-day');
+
+/* 숫자만 입력되도록 필터링 + 자동 다음칸 이동
+   한 자리로 이미 완결되는 숫자(예: 월의 2~9, 일의 4~9)는 즉시 다음 칸으로,
+   두 자리가 될 수도 있는 애매한 숫자(0/1로 시작하는 월, 0~3으로 시작하는 일)는
+   잠깐 대기했다가(0.6초) 다음 칸으로 넘어갑니다. */
+function bindNumField(input, maxLen, next, canAdvanceEarly){
+  let timer = null;
+  input.addEventListener('input', ()=>{
+    input.value = input.value.replace(/[^0-9]/g,'').slice(0,maxLen);
+    input.classList.remove('error');
+    if(timer){ clearTimeout(timer); timer = null; }
+
+    if(input.value.length === maxLen){
+      if(next) next.focus();
+      return;
+    }
+    if(input.value.length === 1 && next){
+      if(canAdvanceEarly && canAdvanceEarly(input.value)){
+        next.focus();
+      } else {
+        timer = setTimeout(()=>{ next.focus(); }, 600);
+      }
+    }
+  });
+}
+bindNumField(inYear, 4, inMonth);
+bindNumField(inMonth, 2, inDay, d => d !== '0' && d !== '1');   // 2~9월은 즉시 이동, 0/1로 시작하면 대기(10~12월 가능성)
+bindNumField(inDay, 2, null);
+
+/* ---- color helpers ---- */
+function hexToHsl(hex){
+  let r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max+min)/2;
+  if(max===min){ h=s=0; }
+  else{
+    const d = max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: h = (g-b)/d + (g<b?6:0); break;
+      case g: h = (b-r)/d + 2; break;
+      case b: h = (r-g)/d + 4; break;
+    }
+    h/=6;
+  }
+  return [h*360, s*100, l*100];
+}
+function hslToHex(h,s,l){
+  h/=360; s/=100; l/=100;
+  let r,g,b;
+  if(s===0){ r=g=b=l; }
+  else{
+    const hue2rgb = (p,q,t)=>{
+      if(t<0) t+=1; if(t>1) t-=1;
+      if(t<1/6) return p+(q-p)*6*t;
+      if(t<1/2) return q;
+      if(t<2/3) return p+(q-p)*(2/3-t)*6;
+      return p;
+    };
+    const q = l<0.5 ? l*(1+s) : l+s-l*s;
+    const p = 2*l-q;
+    r = hue2rgb(p,q,h+1/3); g = hue2rgb(p,q,h); b = hue2rgb(p,q,h-1/3);
+  }
+  const toHex = x => Math.round(x*255).toString(16).padStart(2,'0');
+  return '#' + toHex(r)+toHex(g)+toHex(b);
+}
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+function reveal(){
+  const y = parseInt(inYear.value, 10);
+  const m = parseInt(inMonth.value, 10);
+  const day = parseInt(inDay.value, 10);
+
+  const yearOk = inYear.value.length === 4 && y >= 1930 && y <= new Date().getFullYear();
+  const monthOk = m >= 1 && m <= 12;
+  const dayOk = day >= 1 && day <= 31;
+
+  [inYear, inMonth, inDay].forEach(el => el.classList.remove('error'));
+
+  if(!yearOk || !monthOk || !dayOk){
+    if(!yearOk) inYear.classList.add('error');
+    if(!monthOk) inMonth.classList.add('error');
+    if(!dayOk) inDay.classList.add('error');
+    (!yearOk ? inYear : !monthOk ? inMonth : inDay).focus();
+    return;
+  }
+
+  const d = MONTHS[m-1];
+
+  document.getElementById('select-screen').style.display = 'none';
+  const rs = document.getElementById('reveal-screen');
+  rs.classList.add('active');
+
+  document.getElementById('swatch').style.background = d.hex;
+  document.getElementById('color-name').textContent = d.name;
+  document.getElementById('symbol-tag').innerHTML = '<span class="label">상징</span><span class="value">' + d.symbol + '</span>';
+  document.getElementById('color-hex').textContent = d.hex;
+  document.getElementById('message').textContent = '“' + d.msg + '”';
+
+  const kwRow = document.getElementById('keyword-row');
+  kwRow.innerHTML = '';
+  d.keywords.forEach(k=>{
+    const chip = document.createElement('div');
+    chip.className = 'keyword-chip';
+    chip.textContent = k;
+    kwRow.appendChild(chip);
+  });
+
+  document.getElementById('tip-box').innerHTML =
+    '<span class="tip-label">오늘의 처방</span>' + d.tip;
+
+  const digitSum = String(y+m+day).split('').reduce((a,c)=>a+parseInt(c),0);
+  const lucky = ((digitSum - 1) % 9) + 1;
+  document.getElementById('lucky').textContent = '행운 숫자 · ' + lucky;
+
+  const [h, s, l] = hexToHsl(d.hex);
+  const variants = [
+    { label: '메인 탄생 컬러', hex: d.hex },
+    { label: '유사 조화색', hex: hslToHex((h+30)%360, clamp(s-4,0,100), clamp(l+6,0,92)) },
+    { label: '보색 포인트', hex: hslToHex((h+180)%360, clamp(s*0.72,0,100), clamp(l+2,15,88)) },
+    { label: '삼각 조화색', hex: hslToHex((h+120)%360, clamp(s*0.85,0,100), clamp(l+10,15,90)) },
+  ];
+  const row = document.getElementById('palette-row');
+  row.innerHTML = '';
+  variants.forEach(v=>{
+    const chip = document.createElement('div');
+    chip.className = 'palette-chip';
+    chip.innerHTML = '<div class="palette-swatch" style="background:'+v.hex+'"></div>'
+                    + '<div class="palette-hex">'+v.label+'</div>';
+    row.appendChild(chip);
+  });
+
+  document.getElementById('stage').style.background =
+    'radial-gradient(120% 140% at 50% -10%, ' + d.hex + '22 0%, #faf6ee 60%)';
+}
+
+function reset(){
+  document.getElementById('reveal-screen').classList.remove('active');
+  document.getElementById('select-screen').style.display = 'flex';
+  [inYear, inMonth, inDay].forEach(el => { el.value = ''; el.classList.remove('error'); });
+  inYear.focus();
+  document.getElementById('stage').style.background =
+    'radial-gradient(120% 140% at 50% -10%, #f1e9d8 0%, #faf6ee 55%)';
+}
+</script>
+
+</body>
+</html>
